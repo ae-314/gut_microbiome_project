@@ -40,6 +40,8 @@ The project follows a modular structure to separate concerns and facilitate coll
 | `train.py` | The main entry point for running the model training pipeline. |
 | `main.py` | The overall execution script for the entire project workflow. |
 | `data_loading.py` | Utility functions for handling data I/O and alignment. |
+| `config.yaml` | Centralized YAML configuration file for all run parameters (data paths, model settings, evaluation metrics). |
+| `utils.py` | Helper functions including configuration loading from YAML. |
 
 ## Getting Started
 
@@ -63,6 +65,30 @@ To set up the project environment and begin contributing:
     The pre-trained Microbiome Transformer model checkpoint can be downloaded from Figshare:
     
     [Model and Data for diabimmune example](https://figshare.com/articles/dataset/Model_and_Data_for_diabimmune_example/30429055?file=58993825)
+
+4.  **Configure your project:**
+    
+    All run parameters are managed through `config.yaml`. This includes:
+    - Data paths (dataset location, checkpoint paths)
+    - Model settings (classifier type, hyperparameters)
+    - Evaluation parameters (metrics, cross-validation settings)
+    
+    Edit `config.yaml` to customize these parameters for your needs:
+    ```yaml
+    data:
+      dataset_path: "path/to/your/data"
+    
+    model:
+      classifier: "linear regression"
+      classifier_params:
+        max_iter: 1000
+        solver: "lbfgs"
+    
+    evaluation:
+      metrics: ["accuracy", "precision", "recall", "f1", "roc_auc"]
+      cv_folds: 5
+    ```
+
     
 
 ## 🤝 Contributing

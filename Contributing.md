@@ -24,8 +24,8 @@ The project is structured around the core components of a machine learning workf
 | **Model Components** | `modules/` | Intended to house reusable classes and functions for the model architecture (e.g., `MicrobiomeTransformer`). |
 | **Training/Execution** | `train.py`, `main.py` | The main entry points for running the training and overall pipeline. |
 | **Evaluation** | `evaluation/` | Intended to house scripts or modules for model performance assessment. |
-| **Configuration** | `pyproject.toml` | Project dependencies and packaging. |
-| **Utilities** | `data_loading.py` | Contains functions for loading data, which is a key part of the workflow. |
+| **Configuration** | `config.yaml`, `pyproject.toml` | YAML configuration for run parameters (data paths, model settings, evaluation metrics) and project dependencies. |
+| **Utilities** | `utils.py`, `data_loading.py` | Helper functions for configuration loading and data I/O. |
 | **Examples/Legacy** | `example_scripts/` | Example scripts training a classifier based on MicrobiomeTransformer(`predict_milk.py`, `predict_hla.py`) |
 
 ### 1.2. Modular approach
@@ -73,7 +73,7 @@ Once the core components are modularized, they can be integrated into the main e
 
 ### Phase 3: Cleanup and Finalization
 
-5.  **Configuration Refinement:** Review `config.yaml` and ensure all new modules and scripts correctly reference the configuration parameters.
+5.  **Configuration Refinement:** The project now uses `config.yaml` for centralized parameter management (handled via `utils.py`). Ensure all new modules and scripts correctly reference the configuration parameters by importing and using the `load_config()` function from `utils.py`.
 6.  **Documentation:** Update the main `README.md` to reflect the new modular structure and provide clear instructions on how to run the `train.py` and `evaluation/evaluate.py` scripts.
 7.  **Deprecation:** Remove or clearly mark the legacy/notebook-like scripts in `example_scripts/` to prevent confusion.
 
@@ -115,6 +115,7 @@ We welcome contributions to this project! Follow these steps to contribute effec
 
     *   Keep functions focused and modular.
     *   Use type hints where appropriate.
+    *   **Use the configuration system:** All parameters should be managed through `config.yaml`. Import and use the `load_config()` function from `utils.py` rather than hardcoding values.
 
 4.  **Test Your Changes:** Ensure your code works as expected and doesn't break existing functionality.
 

@@ -1,0 +1,22 @@
+# Config arguments for the project
+
+# Data path
+data:
+  dataset_path: "" # path to preprocessed data
+  # ... other data args
+
+# model
+model:
+  classifier: "linear regression" # [linear regression, ...]
+  classifier_params:
+    max_iter: 1000
+    solver: "lbfgs"
+    class_weight: "balanced"
+    random_state: 42
+    # ... other classifier params
+
+# evaluation
+evaluation:
+  metrics: ["accuracy", "precision", "recall", "f1", "roc_auc"] # other metrics
+  cv_folds: 5 # [2, 5, ...]
+  # ... other evaluation params

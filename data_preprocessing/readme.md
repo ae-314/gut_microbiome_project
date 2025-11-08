@@ -83,6 +83,8 @@ You can modify the following parameters at the top of the script:
 - `MODEL_NAME`: ProkBERT model variant (default: `"neuralbioinfo/prokbert-mini-long"`)
 - `DEVICE`: Computing device - `"cpu"`, `"cuda"`, or `"mps"` (default: `"cpu"`)
 
+**Note**: The main project now uses `config.yaml` for centralized parameter management. Future updates may migrate these preprocessing script parameters to the config file as well.
+
 ### Inputs
 
 - **dna_sequences/*.csv**: CSV files containing OTU-DNA mappings (output from `dna_from_srs.py`)

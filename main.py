@@ -4,8 +4,14 @@ from data_loading import load_data
 from modules.classifier import MicrobiomeClassifier
 from train import train_classifier
 from evaluation import evaluate_classifier
+from utils import load_config
 
-def __init__():
+
+
+if __name__ == "__main__":
+    # load config
+    config = load_config()
+    
     # load data
     data = load_data()
     # load model
