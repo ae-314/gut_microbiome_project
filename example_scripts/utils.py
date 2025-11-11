@@ -7,26 +7,26 @@ import torch
 import yaml
 from tqdm import tqdm
 
-from model import MicrobiomeTransformer
+from modules.model import MicrobiomeTransformer
 
 
-def load_config(config_path: str = "config.yaml") -> Dict[str, Any]:
+def load_config(config_path: str = "./example_scripts/config.yaml") -> Dict[str, Any]:
     """
     Load configuration from YAML file.
-    
+
     Args:
         config_path: Path to the YAML configuration file
-        
+
     Returns:
         Dictionary containing configuration parameters
     """
     config_file = Path(config_path)
     if not config_file.exists():
         raise FileNotFoundError(f"Configuration file not found: {config_path}")
-    
+
     with open(config_file, 'r') as f:
         config = yaml.safe_load(f)
-    
+
     return config
 
 
@@ -50,28 +50,28 @@ TXT_EMB = 1536
 
 
 def load_run_data(
-    wgs_path=None,
-    extra_path=None,
-    samples_path=None,
-    microbeatlas_path=None,
-    config=None,
+        wgs_path=None,
+        extra_path=None,
+        samples_path=None,
+        microbeatlas_path=None,
+        config=None,
 ):
     """
     Load and merge run data from multiple sources.
-    
+
     Args:
         wgs_path: Path to WGS run table (default from config)
         extra_path: Path to extra run table (default from config)
         samples_path: Path to samples table (default from config)
         microbeatlas_path: Path to microbeatlas samples (default from config)
         config: Configuration dictionary (default: global config)
-        
+
     Returns:
         Tuple of (run_rows, SRA_to_micro, gid_to_sample, micro_to_subject, micro_to_sample)
     """
     if config is None:
         config = get_config()
-    
+
     wgs_path = wgs_path or config['data']['wgs_run_table']
     extra_path = extra_path or config['data']['extra_run_table']
     samples_path = samples_path or config['data']['samples_table']
@@ -103,22 +103,34 @@ def load_run_data(
                 if rid:
                     SRA_to_micro[rid] = srs
 
-    with open(samples_path) as f:
-        header = None
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            pieces = line.split(',')
-            if header is None:
-                header = pieces
-                header[0] = header[0].lstrip('\ufeff')
-                continue
-            row = dict(zip(header, pieces))
+    # with open(samples_path) as f:
+    #     header = None
+    #     for line in f:
+    #         line = line.strip()
+    #         if not line:
+    #             continue
+    #         pieces = line.split(',')
+    #         if header is None:
+    #             header = pieces
+    #             header[0] = header[0].lstrip('\ufeff')
+    #             continue
+    #         row = dict(zip(header, pieces))
+    #         for key in ('gid_wgs', 'gid_16s'):
+    #             gid = row.get(key, '').strip()
+    #             if gid:
+    #                 gid_to_sample[gid] = {'subject': row['subjectID'], 'sample': row['sampleID']}
+    with open(samples_path, newline='', encoding='utf-8-sig') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            # normalize keys/values
+            row = {(k or '').strip(): (v or '').strip() for k, v in row.items()}
             for key in ('gid_wgs', 'gid_16s'):
-                gid = row.get(key, '').strip()
+                gid = row.get(key, '')
                 if gid:
-                    gid_to_sample[gid] = {'subject': row['subjectID'], 'sample': row['sampleID']}
+                    gid_to_sample[gid] = {
+                        'subject': row['subjectID'],
+                        'sample': row['sampleID'],
+                    }
 
     for run_id, srs in SRA_to_micro.items():
         run_info = run_rows.get(run_id, {})
@@ -133,26 +145,26 @@ def load_run_data(
 
 
 def collect_micro_to_otus(
-    SRA_to_micro,
-    micro_to_subject,
-    biom_path=None,
-    config=None,
+        SRA_to_micro,
+        micro_to_subject,
+        biom_path=None,
+        config=None,
 ):
     """
     Collect OTU data for microbiome samples.
-    
+
     Args:
         SRA_to_micro: Mapping from SRA run IDs to microbiome sample IDs
         micro_to_subject: Mapping from microbiome sample IDs to subject IDs
         biom_path: Path to BIOM file (default from config)
         config: Configuration dictionary (default: global config)
-        
+
     Returns:
         Dictionary mapping microbiome sample IDs to lists of OTU IDs
     """
     if config is None:
         config = get_config()
-    
+
     biom_path = biom_path or config['data']['biom_path']
     micro_to_otus = {}
     needed_srs = set(SRA_to_micro.values()) | set(micro_to_subject.keys())
@@ -192,19 +204,19 @@ def collect_micro_to_otus(
 def load_microbiome_model(checkpoint_path=None, config=None):
     """
     Load pre-trained microbiome transformer model.
-    
+
     Args:
         checkpoint_path: Path to model checkpoint (default from config)
         config: Configuration dictionary (default: global config)
-        
+
     Returns:
         Tuple of (model, device)
     """
     if config is None:
         config = get_config()
-    
+
     checkpoint_path = checkpoint_path or config['data']['checkpoint_path']
-    
+
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     checkpoint = torch.load(checkpoint_path, map_location=device)
     state_dict = checkpoint['model_state_dict']
@@ -231,18 +243,18 @@ def load_microbiome_model(checkpoint_path=None, config=None):
 def preview_prokbert_embeddings(prokbert_path=None, limit=10, config=None):
     """
     Preview available ProkBERT embeddings.
-    
+
     Args:
         prokbert_path: Path to ProkBERT embeddings file (default from config)
         limit: Maximum number of example IDs to show
         config: Configuration dictionary (default: global config)
-        
+
     Returns:
         List of example embedding IDs
     """
     if config is None:
         config = get_config()
-    
+
     prokbert_path = prokbert_path or config['data']['prokbert_path']
     with h5py.File(prokbert_path) as emb_file:
         embedding_group = emb_file['embeddings']
@@ -258,16 +270,16 @@ def preview_prokbert_embeddings(prokbert_path=None, limit=10, config=None):
 
 
 def build_sample_embeddings(
-    micro_to_otus,
-    model,
-    device,
-    prokbert_path=None,
-    txt_emb=None,
-    config=None,
+        micro_to_otus,
+        model,
+        device,
+        prokbert_path=None,
+        txt_emb=None,
+        config=None,
 ):
     """
     Build sample embeddings from OTU embeddings.
-    
+
     Args:
         micro_to_otus: Dictionary mapping microbiome sample IDs to OTU lists
         model: Pre-trained microbiome transformer model
@@ -275,13 +287,13 @@ def build_sample_embeddings(
         prokbert_path: Path to ProkBERT embeddings file (default from config)
         txt_emb: Text embedding dimension (hardcoded constant if not provided)
         config: Configuration dictionary (default: global config)
-        
+
     Returns:
         Tuple of (sample_embeddings dict, missing_otus count)
     """
     if config is None:
         config = get_config()
-    
+
     prokbert_path = prokbert_path or config['data']['prokbert_path']
     txt_emb = txt_emb or TXT_EMB
     sample_embeddings = {}

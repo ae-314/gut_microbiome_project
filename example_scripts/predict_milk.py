@@ -1,5 +1,5 @@
 #%%
-from utils import (
+from example_scripts.utils import (
     load_run_data,
     collect_micro_to_otus,
     load_microbiome_model,
@@ -54,7 +54,20 @@ samples_path = 'data/samples.csv'
 milk_path = 'data/milk.csv'
 
 sample_rows = {}
-with open(samples_path) as f:
+# with open(samples_path) as f:
+#     header = None
+#     for line in f:
+#         line = line.strip()
+#         if not line:
+#             continue
+#         pieces = line.split(',')
+#         if header is None:
+#             header = pieces
+#             header[0] = header[0].lstrip('\ufeff')
+#             continue
+#         row = dict(zip(header, pieces))
+#         sample_rows[row['sampleID']] = row
+with open(samples_path, encoding="utf-8-sig", newline="") as f:
     header = None
     for line in f:
         line = line.strip()
@@ -62,14 +75,35 @@ with open(samples_path) as f:
             continue
         pieces = line.split(',')
         if header is None:
-            header = pieces
-            header[0] = header[0].lstrip('\ufeff')
+            # normalize header
+            header = [h.lstrip('\ufeff').strip() for h in pieces]
+            print("samples.csv header:", header)                     # ← ADD
+            assert 'sampleID' in header and 'subjectID' in header,  \
+                   f"samples.csv header missing keys: {header}"     # ← ADD
             continue
         row = dict(zip(header, pieces))
         sample_rows[row['sampleID']] = row
+print("sample_rows count:", len(sample_rows))                        # ← ADD
+
 
 milk_labels = {}
-with open(milk_path) as f:
+# with open(milk_path) as f:
+#     header = None
+#     for line in f:
+#         line = line.strip()
+#         if not line:
+#             continue
+#         pieces = line.split(',')
+#         if header is None:
+#             header = pieces
+#             header[0] = header[0].lstrip('\ufeff')
+#             continue
+#         row = dict(zip(header, pieces))
+#         subject = row['subjectID']
+#         label = row['milk_first_three_days']
+#         if label:
+#             milk_labels[subject] = label
+with open(milk_path, encoding="utf-8-sig", newline="") as f:
     header = None
     for line in f:
         line = line.strip()
@@ -77,14 +111,22 @@ with open(milk_path) as f:
             continue
         pieces = line.split(',')
         if header is None:
-            header = pieces
-            header[0] = header[0].lstrip('\ufeff')
+            # normalize header
+            header = [h.lstrip('\ufeff').strip() for h in pieces]
+            print("milk.csv header:", header)                         # ← ADD
+            assert 'subjectID' in header and 'milk_first_three_days' in header, \
+                   f"milk.csv header missing keys: {header}"          # ← ADD
             continue
         row = dict(zip(header, pieces))
+        if 'subjectID' not in row or 'milk_first_three_days' not in row:  # ← ADD
+            print("milk.csv row missing keys:", list(row.keys()))         # ← ADD
+            continue                                                      # ← ADD
         subject = row['subjectID']
         label = row['milk_first_three_days']
         if label:
             milk_labels[subject] = label
+print("milk_labels count:", len(milk_labels))                          # ← ADD
+
 
 sample_records = []
 ages = []
@@ -185,8 +227,8 @@ for start, end in bin_ranges:
         continue
 
     skf = StratifiedKFold(
-        n_splits=config['cross_validation']['k_folds'], 
-        shuffle=True, 
+        n_splits=config['cross_validation']['k_folds'],
+        shuffle=True,
         random_state=config['cross_validation']['random_state']
     )
     class_scores = {label: [] for label in label_encoder.classes_}
