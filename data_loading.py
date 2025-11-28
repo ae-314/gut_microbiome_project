@@ -964,8 +964,8 @@ def generate_microbiome_embeddings_h5(
 
     print(f"\nSaved microbiome sample embeddings to {output_h5_path}")
     return output_h5_path
-
-def build_paths(config):
+    
+def build_paths(config: dict, dataset_path: Path):
     # extract dataset name and csv file name from dataset path (example: tanaka, month_2.csv)
     dataset_name = dataset_path.parent.name
     dataset_csv_name = dataset_path.name.split('.')[0]
@@ -1043,6 +1043,66 @@ def create_dataset_df(dataset_path: Path, microbiome_embeddings_dir: Path):
     
     return dataset_df
 
+
+def load_dataset_df(config: dict) -> pd.DataFrame:
+    """
+    Process dataset and return dataframe with id, label, and microbiome embedding.
+    Processing pipeline: 
+    1. extract csv sequences from dataset
+    2. generate dna embeddings from csv sequences
+    3. generate microbiome embeddings from dna embeddings
+    4. sanity check for consistency on dna embeddings and microbiome embeddings
+    5. create dataframe relating labels from dataset csv and corresponding microbiome embeddings
+    
+    Args:
+        config_path: Path to config file
+    Returns:
+        DataFrame with id, label, and microbiome embedding
+    """
+
+    dataset_path = Path(config["data"]["dataset_path"])
+    sequences_dir, dna_embeddings_dir, microbiome_embeddings_dir = build_paths(config, dataset_path)
+    
+    # 1) extract csv sequences from dataset
+    if not sequences_dir.exists():
+        # if not already extracted
+        extract_csv_sequences(sequences_dir, config)
+    else:
+        print(f"CSV sequences already exist at {sequences_dir}, skipping extraction")
+    
+    # 2) generate dna embeddings from csv sequences
+    if not dna_embeddings_dir.exists():
+        generate_dna_embeddings_h5(sequences_dir, 
+                                dna_embeddings_dir, 
+                                config["data"]["embedding_model"],
+                                batch_size=config["data"]["batch_size_embedding"],
+                                device=config["data"]["device"])
+    else:
+        print(f"DNA embeddings already exist at {dna_embeddings_dir}, skipping generation")
+    
+    # 3) generate microbiome embeddings from dna embeddings
+    if not microbiome_embeddings_dir.exists():
+        dna_embeddings_h5_path = dna_embeddings_dir / 'dna_embeddings.h5'
+        generate_microbiome_embeddings_h5(
+            dna_embeddings_h5_path,
+            microbiome_embeddings_dir,
+            config["data"]["mirobiome_transformer_checkpoint"],
+            device=config["data"]["device"]
+        )
+    else:
+        print(f"Microbiome embeddings already exist at {microbiome_embeddings_dir}, skipping generation")
+    
+    # sanity check for consistency on dna embeddings and microbiome embeddings
+    if not sanity_check_dna_and_microbiome_embeddings(dna_embeddings_dir, microbiome_embeddings_dir):
+        raise ValueError("DNA embeddings and microbiome embeddings are not consistent")
+    else:
+        print("Data sanity check passed")
+    
+    # create dataframe relating labels from dataset csv and corresponding microbiome embeddings
+    dataset_df = create_dataset_df(dataset_path, microbiome_embeddings_dir)
+    print(f"Created dataset dataframe with {len(dataset_df)} rows and {len(dataset_df.columns)} columns")
+    return dataset_df
+
 # ==================== Example Usage ====================
 
 if __name__ == "__main__":
@@ -1051,7 +1111,7 @@ if __name__ == "__main__":
     config = load_config(config_path)
     dataset_path = Path(config["data"]["dataset_path"]) # example: data_preprocessing/datasets/tanaka/month_2.csv
     
-    sequences_dir, dna_embeddings_dir, microbiome_embeddings_dir = build_paths(config)
+    sequences_dir, dna_embeddings_dir, microbiome_embeddings_dir = build_paths(config, dataset_path)
     
     # 1) extract csv sequences from dataset
     if not sequences_dir.exists():
