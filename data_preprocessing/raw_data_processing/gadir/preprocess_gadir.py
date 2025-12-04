@@ -28,13 +28,12 @@ def preprocess_gadir(input_csv: str, output_dir: str = None):
         df = df[df['Organism'].str.contains('human', case=False, na=False)]
     
     # Filter out Unclear/unclear samples (case-insensitive)
-    df = df[~df['Group'].str.lower().isin(['unclear'])]
+    df = df[~df['Group'].str.lower().isin(['unclear', 'controlhirisk'])]
     
     # Map Group values to binary labels
     label_mapping = {
         'FoodAllergy': 1,
-        'Control': 0,
-        'ControlHiRisk': 0
+        'Control': 0
     }
     
     df['label'] = df['Group'].map(label_mapping)
